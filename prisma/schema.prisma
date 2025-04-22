@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customers Customer[]
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  phone       String
+  authUserId  String   @map("auth_user_id")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  orders      Order[]
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id              String         @id @default(uuid())
+  status          OrderStatus    @default(pendente)
+  paymentStatus   PaymentStatus  @default(pendente)
+  paymentMethod   String
+  totalAmount     Float
+  pickupDate      DateTime
+  pickupTime      String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  customerId      String
+  customer        Customer       @relation(fields: [customerId], references: [id])
+
+  pickupLocationId String?
+  pickupLocation   PickupLocation? @relation(fields: [pickupLocationId], references: [id])
+
+  campaignId      String?
+  campaign        Campaign?      @relation(fields: [campaignId], references: [id])
+
+  orderItems      OrderItem[]
+}
+
+model OrderItem {
+  id              String   @id @default(uuid())
+  quantity        Int
+  unitPrice       Float
+
+  orderId         String
+  productId       String
+
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id])
+}
+
+model PickupLocation {
+  id        String   @id @default(uuid())
+  name      String
+
+  orders    Order[]
+}
+
+model Campaign {
+  id        String   @id @default(uuid())
+  name      String
+
+  orders    Order[]
+}
+
+enum OrderStatus {
+  pendente
+  confirmado
+  retirado
+  cancelado
+}
+
+enum PaymentStatus {
+  pendente
+  pago
+  falhou
+}
